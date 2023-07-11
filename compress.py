@@ -14,7 +14,7 @@ def compress_videos(game: str):
     total_files = len(file_list)
 
     for i, filename in enumerate(file_list, start=1):
-        if (limit != None or i > limit):
+        if limit is not None and i > limit:
             new_file_list = [f for f in os.listdir(target_folder) if f.endswith(".mp4")]
             new_total_files = len(new_file_list)
             print(colored(f"Halted compressions for {game} because of limit {limit}", "yellow"))
