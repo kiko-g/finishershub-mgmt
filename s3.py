@@ -88,19 +88,27 @@ def download_from_s3(game: str):
 def upload_to_s3(game: str):
     aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
     s3 = boto3.client('s3')
-    folder_path = f"videos/{game}"
+    folder_path = f"videos/{game}/compressed"
 
-    for filename in os.listdir(folder_path):
-        if filename.endswith(".mp4"):
-            file_path = os.path.join(folder_path, filename)
-            with open(file_path, 'rb') as file:
-                video_data = file.read()
-                s3.put_object(
-                    Bucket=aws_s3_bucket_name,
-                    Key=f"{game}/{filename}",
-                    Body=video_data
-                )
-            print(colored(f"{filename} uploaded to S3 {aws_s3_bucket_name}", "green"))
+    filenames = os.listdir(folder_path)
+    total_files = len(filenames)
+    
+    if total_files == 0:
+        print(colored(f"No files found in {folder_path}", "red"))
+    
+    for i, filename in enumerate(filenames, start=1):
+        if not filename.endswith(".mp4"):
+            continue
+
+        filepath = os.path.join(folder_path, filename)
+        with open(filepath, 'rb') as file:
+            video_data = file.read()
+            s3.put_object(
+                Bucket=aws_s3_bucket_name,
+                Key=f"{game}/{filename}",
+                Body=video_data
+            )
+        print(colored(f"[{i}/{total_files}] {filename} uploaded to S3 {aws_s3_bucket_name}", "green"))
 
 
 def print_usage():
