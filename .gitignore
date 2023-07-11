@@ -4,6 +4,8 @@
 __pycache__
 
 # large files
+*.mp3
+*.mp4
 videos
 
 # local files
