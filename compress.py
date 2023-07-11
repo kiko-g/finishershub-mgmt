@@ -9,9 +9,19 @@ def compress_videos(game: str):
     target_folder = f"videos/{game}/compressed"
     os.makedirs(target_folder, exist_ok=True)  # Create the target folder if it doesn't exist
 
-    limit = None # Set to None to compress all files
     file_list = [filename for filename in os.listdir(source_folder) if filename.endswith(".mp4")]
     total_files = len(file_list)
+    
+    # compression settings
+    skip = True # Set to True to skip existing files
+    limit = None # Set to None to compress all files
+    preset = "fast" # ultrafast, superfast, faster, fast, medium, slow, veryslow
+    threads = 8 # Number of threads to use for compression
+    audio_codec = "aac" # libmp3lame, libvorbis, libopus, aac, pcm_s16le
+    bitrate = "5000k"
+    codec = "libx264"
+    height = 720
+    
 
     for i, filename in enumerate(file_list, start=1):
         if limit is not None and i > limit:
@@ -23,7 +33,11 @@ def compress_videos(game: str):
             
         print(colored(f"[{i}/{total_files}] Processing {filename}", "blue"))
         if os.path.exists(os.path.join(target_folder, filename)):
-            print(colored(f"[{i}/{total_files}] {filename} already exists in {target_folder}", "yellow"))
+            print(colored(f"[{i}/{total_files}] File already exists in '{target_folder}'", "yellow"))
+            if skip is True:
+                print(colored(f"[{i}/{total_files}] Skipping", "yellow"))
+                continue
+
             overwrite = input(colored("Do you want to overwrite the existing file? (y/n): ", "yellow"))
             if overwrite.lower() != 'y':
                 continue
@@ -35,14 +49,14 @@ def compress_videos(game: str):
         audio_clip = AudioFileClip(input_path)
 
         # Adjust the video parameters for better quality
-        video_clip = video_clip.resize(height=720)
-        video_clip.write_videofile(output_path, codec="libx264", audio=True, audio_codec="aac",
-                                   bitrate="5000k", fps=video_clip.fps, threads=4, preset="medium")
+        video_clip = video_clip.resize(height=height)
+        video_clip.write_videofile(output_path, codec=codec, audio=True, audio_codec=audio_codec,
+                                   bitrate=bitrate, fps=video_clip.fps, threads=threads, preset="medium")
 
         # Merge the compressed video with the original audio
         final_clip = video_clip.set_audio(audio_clip)
-        final_clip.write_videofile(output_path, codec="libx264", audio=True, audio_codec="aac",
-                                   bitrate="5000k", fps=video_clip.fps, threads=4, preset="medium")
+        final_clip.write_videofile(output_path, codec=codec, audio=True, audio_codec="aac",
+                                   bitrate=bitrate, fps=video_clip.fps, threads=threads, preset=preset)
 
         final_clip.close()
         video_clip.close()
@@ -51,8 +65,8 @@ def compress_videos(game: str):
 
     new_file_list = [f for f in os.listdir(target_folder) if f.endswith(".mp4")]
     new_total_files = len(new_file_list)
-    print(colored(f"Completed compressions for {game}", "blue"))
-    print(colored(f"Saved videos in '{target_folder}' ({new_total_files} files)", "blue"))
+    print(colored(f"Completed compressions for {game}", "green"))
+    print(colored(f"Saved videos in '{target_folder}' ({new_total_files} files)", "green"))
 
 
 def print_usage():

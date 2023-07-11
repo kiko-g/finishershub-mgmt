@@ -40,30 +40,49 @@ def list_files_in_s3_bucket(game: str):
     s3 = boto3.client('s3')
 
     response = s3.list_objects_v2(Bucket=aws_s3_bucket_name)
-    if 'Contents' in response:
-        for file_obj in response['Contents']:
-            file_key = file_obj['Key']
-            print(file_key)
-    else:
-        print("No files found in the S3 bucket.")
+    if 'Contents' not in response:
+        print(colored("No files found in the S3 bucket", "red"))
+    
+    files = response['Contents']
+    for file in files:
+        filename = file['Key']
+        print(filename)
 
+    print(colored(f"\nTotal files: {len(files)}", "blue"))
 
 def download_from_s3(game: str):
-    aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
+    skip = True
     s3 = boto3.client('s3')
-    folder_path = f"videos/{game}"
-    os.makedirs(folder_path, exist_ok=True)  # Create the folder if it doesn't exist
+    aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
+    target_folder = f"videos/{game}"
+    os.makedirs(target_folder, exist_ok=True) # Create the folder if it doesn't exist
 
     response = s3.list_objects_v2(Bucket=aws_s3_bucket_name)
-    if 'Contents' in response:
-        for file_obj in response['Contents']:
-            file_key = file_obj['Key']
-            if file_key.endswith(".mp4"):
-                file_path = os.path.join(folder_path, os.path.basename(file_key))
-                s3.download_file(aws_s3_bucket_name, file_key, file_path)
-                print(colored(f"{file_key} downloaded to {file_path}", "green"))
-    else:
-        print("No MP4 files found in the S3 bucket.")
+    if 'Contents' not in response:
+        print(colored(f"No MP4 files found in the S3 bucket ({aws_s3_bucket_name})", "red"))
+    
+    files = response['Contents']
+    total_files = len(files)
+    for i, file in enumerate(files, start=1):
+        filename = file['Key']
+        if not filename.endswith(".mp4"):
+            continue
+
+        print(colored(f"[{i}/{total_files}] Processing {filename}", "blue"))
+        filepath = os.path.join(target_folder, os.path.basename(filename))
+        
+        if os.path.exists(filepath):
+            print(colored(f"[{i}/{total_files}] File already exists in {target_folder}", "yellow"))
+            if skip is True:
+                print(colored(f"[{i}/{total_files}] Skipping", "yellow"))
+                continue
+
+            overwrite = input(colored("Do you want to overwrite the existing file? (y/n): ", "yellow"))
+            if overwrite.lower() != 'y':
+                continue
+        
+        s3.download_file(aws_s3_bucket_name, filename, filepath)
+        print(colored(f"{filename} downloaded to '{filepath}'", "green"))
 
 
 def upload_to_s3(game: str):
