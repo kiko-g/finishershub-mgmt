@@ -34,20 +34,19 @@ def compress_videos(game: str):
         video_clip = VideoFileClip(input_path)
         audio_clip = AudioFileClip(input_path)
 
-        # Adjust the video parameters for compression efficiency
-        video_clip = video_clip.resize(height=720)  # Adjust the height as desired
+        # Adjust the video parameters for better quality
+        video_clip = video_clip.resize(height=720)
         video_clip.write_videofile(output_path, codec="libx264", audio=True, audio_codec="aac",
-                                   bitrate="1000k", fps=video_clip.fps, threads=4, preset="fast")
+                                   bitrate="5000k", fps=video_clip.fps, threads=4, preset="medium")
 
         # Merge the compressed video with the original audio
         final_clip = video_clip.set_audio(audio_clip)
         final_clip.write_videofile(output_path, codec="libx264", audio=True, audio_codec="aac",
-                                   bitrate="1000k", fps=video_clip.fps, threads=4, preset="fast")
+                                   bitrate="5000k", fps=video_clip.fps, threads=4, preset="medium")
 
         final_clip.close()
         video_clip.close()
         audio_clip.close()
-
         print(colored(f"[{i}/{total_files}] {filename} compressed and saved to {output_path}", "green"))
 
     new_file_list = [f for f in os.listdir(target_folder) if f.endswith(".mp4")]
