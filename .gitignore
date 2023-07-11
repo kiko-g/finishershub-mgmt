@@ -1,0 +1,11 @@
+# build
+.vercel
+.DS_STORE
+__pycache__
+
+# large files
+videos
+
+# local files
+.env*
+!.env.example
