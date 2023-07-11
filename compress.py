@@ -9,12 +9,12 @@ def compress_videos(game: str):
     target_folder = f"videos/{game}/compressed"
     os.makedirs(target_folder, exist_ok=True)  # Create the target folder if it doesn't exist
 
-    limit = 1 # Set to None to compress all files
+    limit = None # Set to None to compress all files
     file_list = [filename for filename in os.listdir(source_folder) if filename.endswith(".mp4")]
     total_files = len(file_list)
 
     for i, filename in enumerate(file_list, start=1):
-        if (limit == None or i > limit):
+        if (limit != None or i > limit):
             new_file_list = [f for f in os.listdir(target_folder) if f.endswith(".mp4")]
             new_total_files = len(new_file_list)
             print(colored(f"Halted compressions for {game} because of limit {limit}", "yellow"))
