@@ -1,13 +1,14 @@
 import os
 import sys
 import boto3
+from moviepy.editor import *
 from termcolor import colored
 from dotenv import load_dotenv
 
 
+
 def get_bucket_name(prefix: str, game: str):
     return f"{prefix}.{game}"
-
 
 def check_envs():
     load_dotenv()
@@ -34,27 +35,11 @@ def check_envs():
     else:
         return envs
 
-
-def list_files_in_s3_bucket(game: str):
-    aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
-    s3 = boto3.client('s3')
-
-    response = s3.list_objects_v2(Bucket=aws_s3_bucket_name)
-    if 'Contents' not in response:
-        print(colored("No files found in the S3 bucket", "red"))
-    
-    files = response['Contents']
-    for file in files:
-        filename = file['Key']
-        print(filename)
-
-    print(colored(f"\nTotal files: {len(files)}", "blue"))
-
 def download_from_s3(game: str):
     skip = True
     s3 = boto3.client('s3')
     aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
-    target_folder = f"videos/{game}"
+    target_folder = f"videos/unmuted/{game}"
     os.makedirs(target_folder, exist_ok=True) # Create the folder if it doesn't exist
 
     response = s3.list_objects_v2(Bucket=aws_s3_bucket_name)
@@ -84,10 +69,15 @@ def download_from_s3(game: str):
         s3.download_file(aws_s3_bucket_name, filename, filepath)
         print(colored(f"{filename} downloaded to '{filepath}'", "green"))
 
+def remove_audio_from_video(video_path, output_path):
+    video = VideoFileClip(video_path)
+    video_without_audio = video.without_audio()
+    video_without_audio.write_videofile(output_path, codec="libx264")
+    
 def upload_to_s3(game: str):
     aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
     s3 = boto3.client('s3')
-    folder_path = f"videos/{game}/compressed"
+    folder_path = f"videos/muted/{game}"
 
     filenames = os.listdir(folder_path)
     total_files = len(filenames)
@@ -110,15 +100,6 @@ def upload_to_s3(game: str):
         print(colored(f"[{i}/{total_files}] {filename} uploaded to S3 {aws_s3_bucket_name}", "green"))
 
 
-def print_usage():
-    print(colored("Usage: python s3.py list <mwYYYY>", "red"))
-    print(colored("Usage: python s3.py list all", "red"))
-    print(colored("Usage: python s3.py upload <mwYYYY>", "red"))
-    print(colored("Usage: python s3.py upload all", "red"))
-    print(colored("Usage: python s3.py download <mwYYYY>", "red"))
-    print(colored("Usage: python s3.py download all", "red"))
-
-
 if __name__ == "__main__":
     load_dotenv()
     envs = check_envs()
@@ -132,56 +113,23 @@ if __name__ == "__main__":
                       aws_access_key_id=aws_access_key_id,
                       aws_secret_access_key=aws_secret_access_key)
 
-    # operation not specified
-    if len(sys.argv) < 3:
-        print_usage()
-        sys.exit(1)
+    games = ['mw2019', 'mw2022']
+    # for game in games:
+    #     download_from_s3(game)
 
-    # list files operation
-    elif sys.argv[1] == "list":
-        if sys.argv[2] == "all":
-            list_files_in_s3_bucket("mw2019")
-            list_files_in_s3_bucket("mw2022")
 
-        elif sys.argv[2]:
-            game = sys.argv[2]
-            if (game == "mw2019" or game == "mw2022"):
-                list_files_in_s3_bucket(game)
-            else:
-                print(colored(f"Game '{game}' does not exist", "red"))
-                print_usage()
-                sys.exit(1)
+    # for game in games:
+    #     muted_folder = f"videos/muted/{game}"
+    #     os.makedirs(muted_folder, exist_ok=True)
+    #     for root, _, files in os.walk(f"videos/unmuted/{game}"):
+    #         for i, file in enumerate(files):
+    #             if file.endswith(".mp4"):
+    #                 video_path = os.path.join(root, file)
+    #                 muted_video_path = os.path.join(muted_folder, file)
+    #                 if os.path.exists(muted_video_path):
+    #                     continue
+    #                 remove_audio_from_video(video_path, muted_video_path)
+    #                 print(colored(f"[{i}] in muted folder", "green"))
 
-    # upload operation
-    elif sys.argv[1] == "upload":
-        if sys.argv[2] == "all":
-            upload_to_s3("mw2019")
-            upload_to_s3("mw2022")
-
-        elif sys.argv[2]:
-            game = sys.argv[2]
-            if (game == "mw2019" or game == "mw2022"):
-                upload_to_s3(game)
-            else:
-                print(colored(f"Game '{game}' does not exist", "red"))
-                print_usage()
-                sys.exit(1)
-
-    # download operation
-    elif sys.argv[1] == "download":
-        if sys.argv[2] == "all":
-            download_from_s3("mw2019")
-            download_from_s3("mw2022")
-
-        elif sys.argv[2]:
-            game = sys.argv[2]
-            if (game == "mw2019" or game == "mw2022"):
-                download_from_s3(game)
-            else:
-                print(colored(f"Game '{game}' does not exist", "red"))
-                print_usage()
-                sys.exit(1)
-
-    else:
-        print_usage()
-        sys.exit(1)
+    for game in games:
+        upload_to_s3(game)
