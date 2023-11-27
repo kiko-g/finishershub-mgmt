@@ -10,31 +10,26 @@ def update_s3_uri(mongo_connection_uri, database_name, coll_name):
         original_uri = doc["s3_uri"]
         updated_uri = original_uri.replace("/mw2022/", "/").replace("/mw2019/", "/")
         if updated_uri != original_uri:
-            collection.update_one(
-                {"_id": doc["_id"]}, {"$set": {"s3_uri": updated_uri}}
-            )
+            collection.update_one({"_id": doc["_id"]}, {"$set": {"s3_uri": updated_uri}})
 
 
 def update_bucket_entries(mongo_connection_uri, database_name, coll_name):
+    bucket_name = "finishershub"
     client = pymongo.MongoClient(mongo_connection_uri)
     db = client[database_name]
     collection = db[coll_name]
 
     for doc in collection.find():
-        if "bucket" in doc and doc["bucket"] != "finishershub":
-            collection.update_one(
-                {"_id": doc["_id"]}, {"$set": {"bucket": "finishershub"}}
-            )
+        if "bucket" in doc and doc["bucket"] != bucket_name:
+            collection.update_one({"_id": doc["_id"]}, {"$set": {"bucket": bucket_name}})
 
         if "s3_uri" in doc:
             original_uri = doc["s3_uri"]
-            updated_uri = original_uri.replace(
-                "finishershub.mw2019", "finishershub"
-            ).replace("finishershub.mw2022", "finishershub")
+            updated_uri = original_uri.replace(f"{bucket_name}.mw2019", bucket_name).replace(
+                f"{bucket_name}.mw2022", bucket_name
+            )
             if updated_uri != original_uri:
-                collection.update_one(
-                    {"_id": doc["_id"]}, {"$set": {"s3_uri": updated_uri}}
-                )
+                collection.update_one({"_id": doc["_id"]}, {"$set": {"s3_uri": updated_uri}})
 
 
 def update_s3_uris_with_new_format(mongo_connection_uri, database_name, coll_name):

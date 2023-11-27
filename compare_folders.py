@@ -1,6 +1,7 @@
 import os
 import filecmp
 
+
 def compare_folders(dir1, dir2):
     """
     Compare two folders recursively. Files in each folder are assumed to be
@@ -8,14 +9,14 @@ def compare_folders(dir1, dir2):
 
     :param dir1: First directory path
     :param dir2: Second directory path
-    :return: True if the directory trees are the same and 
-            there were no errors while accessing the directories or files, 
+    :return: True if the directory trees are the same and
+            there were no errors while accessing the directories or files,
             False otherwise.
     """
 
     # Compare the directories using dircmp
     comparison = filecmp.dircmp(dir1, dir2)
-    
+
     # Recursively check if subdirectories are the same
     def are_dirs_equal(dcmp):
         if dcmp.left_only or dcmp.right_only or dcmp.diff_files:
@@ -26,6 +27,7 @@ def compare_folders(dir1, dir2):
         return True
 
     return are_dirs_equal(comparison)
+
 
 if __name__ == "__main__":
     dir1 = "videos/mw2022"

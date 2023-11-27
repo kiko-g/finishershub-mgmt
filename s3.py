@@ -37,40 +37,41 @@ def check_envs():
 
 def list_files_in_s3_bucket(game: str):
     aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
 
     response = s3.list_objects_v2(Bucket=aws_s3_bucket_name)
-    if 'Contents' not in response:
+    if "Contents" not in response:
         print(colored("No files found in the S3 bucket", "red"))
-    
-    files = response['Contents']
+
+    files = response["Contents"]
     for file in files:
-        filename = file['Key']
+        filename = file["Key"]
         print(filename)
 
     print(colored(f"\nTotal files: {len(files)}", "blue"))
 
+
 def download_from_s3(game: str):
     skip = True
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
     aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
     target_folder = f"videos/{game}"
-    os.makedirs(target_folder, exist_ok=True) # Create the folder if it doesn't exist
+    os.makedirs(target_folder, exist_ok=True)  # Create the folder if it doesn't exist
 
     response = s3.list_objects_v2(Bucket=aws_s3_bucket_name)
-    if 'Contents' not in response:
+    if "Contents" not in response:
         print(colored(f"No MP4 files found in the S3 bucket ({aws_s3_bucket_name})", "red"))
-    
-    files = response['Contents']
+
+    files = response["Contents"]
     total_files = len(files)
     for i, file in enumerate(files, start=1):
-        filename = file['Key']
+        filename = file["Key"]
         if not filename.endswith(".mp4"):
             continue
 
         print(colored(f"[{i}/{total_files}] Processing {filename}", "blue"))
         filepath = os.path.join(target_folder, os.path.basename(filename))
-        
+
         if os.path.exists(filepath):
             print(colored(f"[{i}/{total_files}] File already exists in {target_folder}", "yellow"))
             if skip is True:
@@ -78,35 +79,32 @@ def download_from_s3(game: str):
                 continue
 
             overwrite = input(colored("Do you want to overwrite the existing file? (y/n): ", "yellow"))
-            if overwrite.lower() != 'y':
+            if overwrite.lower() != "y":
                 continue
-        
+
         s3.download_file(aws_s3_bucket_name, filename, filepath)
         print(colored(f"{filename} downloaded to '{filepath}'", "green"))
 
+
 def upload_to_s3(game: str):
     aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
     folder_path = f"videos/{game}/compressed"
 
     filenames = os.listdir(folder_path)
     total_files = len(filenames)
-    
+
     if total_files == 0:
         print(colored(f"No files found in {folder_path}", "red"))
-    
+
     for i, filename in enumerate(filenames, start=1):
         if not filename.endswith(".mp4"):
             continue
 
         filepath = os.path.join(folder_path, filename)
-        with open(filepath, 'rb') as file:
+        with open(filepath, "rb") as file:
             video_data = file.read()
-            s3.put_object(
-                Bucket=aws_s3_bucket_name,
-                Key=filename,
-                Body=video_data
-            )
+            s3.put_object(Bucket=aws_s3_bucket_name, Key=filename, Body=video_data)
         print(colored(f"[{i}/{total_files}] {filename} uploaded to S3 {aws_s3_bucket_name}", "green"))
 
 
@@ -127,10 +125,12 @@ if __name__ == "__main__":
     aws_access_key_id = envs["AWS_ACCESS_KEY_ID"]
     aws_secret_access_key = envs["AWS_SECRET_ACCESS_KEY"]
 
-    s3 = boto3.client('s3',
-                      region_name=aws_s3_region_name,
-                      aws_access_key_id=aws_access_key_id,
-                      aws_secret_access_key=aws_secret_access_key)
+    s3 = boto3.client(
+        "s3",
+        region_name=aws_s3_region_name,
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+    )
 
     # operation not specified
     if len(sys.argv) < 3:
@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
         elif sys.argv[2]:
             game = sys.argv[2]
-            if (game == "mw2019" or game == "mw2022"):
+            if game == "mw2019" or game == "mw2022":
                 list_files_in_s3_bucket(game)
             else:
                 print(colored(f"Game '{game}' does not exist", "red"))
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
         elif sys.argv[2]:
             game = sys.argv[2]
-            if (game == "mw2019" or game == "mw2022"):
+            if game == "mw2019" or game == "mw2022":
                 upload_to_s3(game)
             else:
                 print(colored(f"Game '{game}' does not exist", "red"))
@@ -175,7 +175,7 @@ if __name__ == "__main__":
 
         elif sys.argv[2]:
             game = sys.argv[2]
-            if (game == "mw2019" or game == "mw2022"):
+            if game == "mw2019" or game == "mw2022":
                 download_from_s3(game)
             else:
                 print(colored(f"Game '{game}' does not exist", "red"))
