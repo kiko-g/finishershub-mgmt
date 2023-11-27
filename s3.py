@@ -13,7 +13,7 @@ def check_envs():
     load_dotenv()
     envs = {}
     missing_envs = []
-    env_names = ["AWS_S3_BUCKET_PREFIX", "AWS_S3_REGION_NAME", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
+    env_names = ["AWS_S3_BUCKET_NAME", "AWS_S3_REGION_NAME", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
 
     for variable_name in env_names:
         env_var = os.getenv(variable_name)
@@ -36,9 +36,6 @@ def check_envs():
 
 
 def list_files_in_s3_bucket(game: str):
-    aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
-    s3 = boto3.client("s3")
-
     response = s3.list_objects_v2(Bucket=aws_s3_bucket_name)
     if "Contents" not in response:
         print(colored("No files found in the S3 bucket", "red"))
@@ -53,8 +50,6 @@ def list_files_in_s3_bucket(game: str):
 
 def download_from_s3(game: str):
     skip = True
-    s3 = boto3.client("s3")
-    aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
     target_folder = f"videos/{game}"
     os.makedirs(target_folder, exist_ok=True)  # Create the folder if it doesn't exist
 
@@ -87,10 +82,7 @@ def download_from_s3(game: str):
 
 
 def upload_to_s3(game: str):
-    aws_s3_bucket_name = get_bucket_name(aws_s3_bucket_prefix, game)
-    s3 = boto3.client("s3")
     folder_path = f"videos/{game}/compressed"
-
     filenames = os.listdir(folder_path)
     total_files = len(filenames)
 
@@ -117,21 +109,7 @@ def print_usage():
     print(colored("Usage: python s3.py download all", "red"))
 
 
-if __name__ == "__main__":
-    load_dotenv()
-    envs = check_envs()
-    aws_s3_bucket_prefix = envs["AWS_S3_BUCKET_PREFIX"]
-    aws_s3_region_name = envs["AWS_S3_REGION_NAME"]
-    aws_access_key_id = envs["AWS_ACCESS_KEY_ID"]
-    aws_secret_access_key = envs["AWS_SECRET_ACCESS_KEY"]
-
-    s3 = boto3.client(
-        "s3",
-        region_name=aws_s3_region_name,
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key,
-    )
-
+def main():
     # operation not specified
     if len(sys.argv) < 3:
         print_usage()
@@ -185,3 +163,38 @@ if __name__ == "__main__":
     else:
         print_usage()
         sys.exit(1)
+
+
+def search_files_in_s3_bucket(search_string: str):
+    response = s3.list_objects_v2(Bucket=aws_s3_bucket_name)
+    if "Contents" not in response:
+        print(colored("No files found in the S3 bucket", "red"))
+        return
+
+    found_files = [file["Key"] for file in response["Contents"] if search_string in file["Key"]]
+    for file in found_files:
+        print(file)
+
+    if not found_files:
+        print(colored(f"No files found containing '{search_string}'", "yellow"))
+    else:
+        print(colored(f"\nTotal files containing '{search_string}': {len(found_files)}", "blue"))
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    envs = check_envs()
+    aws_s3_bucket_name = envs["AWS_S3_BUCKET_NAME"]
+    aws_s3_region_name = envs["AWS_S3_REGION_NAME"]
+    aws_access_key_id = envs["AWS_ACCESS_KEY_ID"]
+    aws_secret_access_key = envs["AWS_SECRET_ACCESS_KEY"]
+
+    s3 = boto3.client(
+        "s3",
+        region_name=aws_s3_region_name,
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+    )
+
+    substr = "20230401000448"
+    search_files_in_s3_bucket(substr)
